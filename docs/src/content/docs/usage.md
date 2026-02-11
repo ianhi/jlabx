@@ -26,7 +26,7 @@ Any arguments not recognized by jlabx are passed through to `jupyter-lab`.
 
 ### Notebook mode
 
-When you pass a `.ipynb` file, jlabx delegates to [juv](https://github.com/manzt/juv) — a tool for reproducible notebooks with [PEP 723](https://peps.python.org/pep-0723/) inline script metadata. juv handles the notebook's own dependencies while jlabx injects your configured UI extensions (collaboration, LSP, vim, etc.) via `--with`.
+When you pass a `.ipynb` file, jlabx delegates to [juv](https://github.com/manzt/juv) — a tool for reproducible notebooks with [PEP 723](https://packaging.python.org/en/latest/specifications/inline-script-metadata/) inline script metadata. juv handles the notebook's own dependencies while jlabx injects your configured UI extensions (collaboration, LSP, vim, etc.) via `--with`.
 
 ```bash
 # Launch a notebook with its own deps + your jlabx extensions

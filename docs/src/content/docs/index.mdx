@@ -29,7 +29,7 @@ Open a notebook with auto-detected dependencies (creates the file if it doesn't 
 jlabx analysis.ipynb
 ```
 
-If the notebook has no [PEP 723](https://peps.python.org/pep-0723/) metadata, jlabx scans `import` statements, maps them to PyPI packages (`sklearn` → `scikit-learn`, `PIL` → `Pillow`, etc.), and passes them as `--with` args — so the notebook just works.
+If the notebook has no [PEP 723](https://packaging.python.org/en/latest/specifications/inline-script-metadata/) metadata, jlabx scans `import` statements, maps them to PyPI packages (`sklearn` → `scikit-learn`, `PIL` → `Pillow`, etc.), and passes them as `--with` args — so the notebook just works.
 
 ```bash
 # Persist auto-detected deps into the notebook as PEP 723 metadata
