@@ -3,9 +3,9 @@ title: jlabx
 description: Launch JupyterLab with extensions — without touching your project's dependencies.
 ---
 
-import { Steps, Aside } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
 
-Launch JupyterLab with your favorite extensions — without adding them to your project's `pyproject.toml` or `pixi.toml`. Works with both **uv** and **pixi** projects out of the box. jlabx manages extensions separately and injects them at launch time.
+Launch JupyterLab with your favorite extensions — without adding them to your project's `pyproject.toml` or `pixi.toml`. Works with both **uv** and **pixi** projects out of the box.
 
 ## Install
 
@@ -13,67 +13,60 @@ Launch JupyterLab with your favorite extensions — without adding them to your 
 uv tool install jlabx
 ```
 
-## Quick start
+## Usage
 
-<Steps>
+```bash
+# Launch JupyterLab in the current project
+jlabx
 
-1. **Launch JupyterLab** with all configured extensions:
+# Launch a single notebook (auto-detects deps from imports)
+jlabx notebook.ipynb
 
-   ```bash
-   jlabx
-   ```
+# Force uv even in a pixi project
+jlabx --uv
 
-2. **Customize** which extensions are loaded:
+# Skip user extensions, core only
+jlabx --no-extras
 
-   ```bash
-   jlabx add jupyterlab-vim
-   jlabx add jupyterlab-myst
-   jlabx remove jupyterlab-git
-   ```
+# Persist auto-detected deps into the notebook as PEP 723 metadata
+jlabx notebook.ipynb --init-deps
 
-3. **See what's configured**:
+# Manage your global UI extensions
+jlabx add jupyterlab-vim
+jlabx remove jupyterlab-git
+jlabx list
+```
 
-   ```bash
-   jlabx list
-   ```
+## How it works
 
-</Steps>
+jlabx manages extensions separately from your project and injects them at launch time. It auto-detects your environment:
 
-## What it does
-
-jlabx always includes these **core extensions**:
-
-- `jupyterlab` — JupyterLab itself
-- `jupyter-collaboration` — real-time collaboration
-- `jupyter-lsp` + `python-lsp-server` — language server support
-
-On top of that, it loads **user extensions** from your config file. The defaults are `jupyterlab-vim`, `jupyterlab-myst`, and `jupyterlab-git` — change them with `jlabx add` and `jlabx remove`.
-
-## Environment detection
-
-jlabx auto-detects how to launch based on files in your working directory:
-
-- **Pixi project** (`pixi.toml` / `pixi.lock`) — delegates to `pixi run jupyter-lab`
-- **Python project** (`pyproject.toml`) — uses `uv run --with <extensions> jupyter-lab`
-- **Standalone** (no project files) — uses `uvx --from jupyterlab --with <extensions> jupyter-lab`
+- **Pixi project** (`pixi.toml`) — `pixi run jupyter-lab`
+- **Python project** (`pyproject.toml`) — `uv run --with <extensions> jupyter-lab`
+- **Standalone** — `uvx --from jupyterlab --with <extensions> jupyter-lab`
+- **Single notebook** (`.ipynb` arg) — delegates to [juv](https://github.com/manzt/juv) with extensions as `--with` args
 
 See [Environments](/jlabx/environments/) for details.
 
 ## Notebook mode
 
-Pass a `.ipynb` file to launch a single notebook via [juv](https://github.com/manzt/juv), with your jlabx extensions injected automatically:
+When you pass a `.ipynb` file, jlabx delegates to [juv](https://github.com/manzt/juv) for per-notebook dependency management:
 
-```bash
-jlabx notebook.ipynb
-```
+- **Has PEP 723 metadata** — juv resolves the notebook's own deps, jlabx adds UI extensions on top
+- **No metadata** — jlabx scans `import` statements, maps them to PyPI packages (`sklearn` → `scikit-learn`, `PIL` → `Pillow`, etc.), and passes them as `--with` args
+- **`--init-deps`** — writes detected deps into the notebook as a PEP 723 metadata cell via `juv init` + `juv add`
 
-juv handles the notebook's own dependencies (via [PEP 723](https://peps.python.org/pep-0723/) inline metadata), while jlabx adds your configured UI extensions on top. No separate juv install needed — it's fetched via `uvx`.
+juv is fetched automatically via `uvx` — no separate install needed.
 
-If the notebook has no PEP 723 metadata, jlabx auto-detects imports from the code cells and passes them as ephemeral `--with` args. Use `--init-deps` to persist them:
+## Extensions
 
-```bash
-jlabx notebook.ipynb --init-deps
-```
+Every launch includes these **core extensions**:
+
+- `jupyterlab` — JupyterLab itself
+- `jupyter-collaboration` — real-time collaboration
+- `jupyter-lsp` + `python-lsp-server` — language server support
+
+On top of that, jlabx loads **user extensions** from `~/.config/jlabx/config.toml`. The defaults are `jupyterlab-vim`, `jupyterlab-myst`, and `jupyterlab-git` — change them with `jlabx add` and `jlabx remove`. See [Configuration](/jlabx/config/) for details.
 
 <Aside type="tip">
   Use `jlabx --no-extras` to skip user extensions and launch with only the core set.
@@ -83,4 +76,4 @@ jlabx notebook.ipynb --init-deps
 
 You're working in a repo with a `pyproject.toml` or `pixi.toml` — maybe it's a library, a data pipeline, or a research project. You want JupyterLab with vim bindings, collaboration, LSP, and other extensions. But adding `jupyterlab` and all those extras to your project dependencies would bloat things up and create conflicts.
 
-jlabx keeps your project clean by managing JupyterLab extensions in a separate config at `~/.config/jlabx/config.toml`, then injecting them at launch time. It auto-detects whether you're in a **pixi** or **uv** project and does the right thing.
+jlabx keeps your project clean by managing JupyterLab extensions in a separate config, then injecting them at launch time. It auto-detects whether you're in a **pixi** or **uv** project and does the right thing.
