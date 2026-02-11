@@ -1,6 +1,6 @@
 [project]
 name = "jlabx"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Launch JupyterLab with extensions — no install, no config, just go"
 requires-python = ">=3.10"
 license = "MIT"
@@ -25,5 +25,11 @@ Documentation = "https://ianhi.github.io/jlabx/"
 jlabx = "jlabx:main"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/jlabx/_version.py"

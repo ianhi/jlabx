@@ -3,6 +3,7 @@ dist/
 *.egg
 build/
 __pycache__/
+src/jlabx/_version.py
 *.py[cod]
 .venv/
 uv.lock

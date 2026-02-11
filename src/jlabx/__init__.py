@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-__version__ = "0.1.0"
+from jlabx._version import __version__  # noqa: E402
 
 CORE_EXTENSIONS = [
     "jupyterlab",
