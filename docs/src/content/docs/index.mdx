@@ -69,6 +69,12 @@ jlabx notebook.ipynb
 
 juv handles the notebook's own dependencies (via [PEP 723](https://peps.python.org/pep-0723/) inline metadata), while jlabx adds your configured UI extensions on top. No separate juv install needed — it's fetched via `uvx`.
 
+If the notebook has no PEP 723 metadata, jlabx auto-detects imports from the code cells and passes them as ephemeral `--with` args. Use `--init-deps` to persist them:
+
+```bash
+jlabx notebook.ipynb --init-deps
+```
+
 <Aside type="tip">
   Use `jlabx --no-extras` to skip user extensions and launch with only the core set.
 </Aside>

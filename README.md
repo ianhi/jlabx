@@ -20,8 +20,11 @@ uv tool install jlabx
 # Launch JupyterLab with default extensions
 jlabx
 
-# Launch a single notebook (uses juv for per-notebook deps)
+# Launch a single notebook (uses juv, auto-detects imports)
 jlabx notebook.ipynb
+
+# Persist detected imports as PEP 723 metadata in the notebook
+jlabx notebook.ipynb --init-deps
 
 # Manage extensions
 jlabx list                  # Show configured extensions

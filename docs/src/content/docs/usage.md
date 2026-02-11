@@ -36,7 +36,29 @@ jlabx analysis.ipynb
 jlabx analysis.ipynb --no-extras
 ```
 
-juv is fetched automatically via `uvx` — no separate install needed. If the notebook has a PEP 723 metadata cell (created with `juv init` / `juv add`), those dependencies are resolved alongside your jlabx extensions.
+juv is fetched automatically via `uvx` — no separate install needed.
+
+#### Auto-detected imports
+
+If the notebook has no PEP 723 metadata, jlabx scans the code cells for `import` statements, maps them to PyPI package names, and passes them as `--with` args to juv — without modifying the notebook file.
+
+```bash
+# Notebook has `import numpy`, `import pandas` but no PEP 723 block:
+jlabx analysis.ipynb
+# → juv run --with numpy --with pandas --with jupyter-collaboration ... analysis.ipynb
+```
+
+Common import-to-package mismatches are handled automatically (e.g. `import cv2` → `opencv-python`, `import PIL` → `Pillow`, `import sklearn` → `scikit-learn`).
+
+#### Persisting deps with `--init-deps`
+
+To write the detected dependencies into the notebook as a PEP 723 metadata cell (so juv manages them going forward):
+
+```bash
+jlabx analysis.ipynb --init-deps
+```
+
+This runs `uvx juv init` + `uvx juv add` with the detected packages, then launches. Subsequent runs of `jlabx analysis.ipynb` will use the persisted metadata instead of re-detecting imports.
 
 ### Port
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import json
 import os
 import signal
 import shutil
@@ -223,25 +225,143 @@ def _run_with_signals(cmd: list[str]) -> None:
     sys.exit(proc.wait())
 
 
+def _read_notebook(notebook: str) -> dict:
+    """Read a notebook as JSON. Returns empty dict on error."""
+    try:
+        with open(notebook) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _has_juv_metadata(nb: dict) -> bool:
+    """Check if a notebook has PEP 723 inline script metadata."""
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        source = "".join(cell.get("source", []))
+        if "# /// script" in source:
+            return True
+    return False
+
+
+def _extract_imports(nb: dict) -> list[str]:
+    """Extract top-level import names from notebook code cells."""
+    modules: set[str] = set()
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        source = "".join(cell.get("source", []))
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    modules.add(alias.name.split(".")[0])
+            elif isinstance(node, ast.ImportFrom):
+                if node.module and node.level == 0:
+                    modules.add(node.module.split(".")[0])
+    return sorted(modules)
+
+
+def _filter_third_party(modules: list[str]) -> list[str]:
+    """Filter out stdlib and obviously internal modules."""
+    # sys.stdlib_module_names is available on 3.10+ (our minimum)
+    stdlib: frozenset[str] = sys.stdlib_module_names  # type: ignore[attr-defined]
+    return [m for m in modules if m not in stdlib and not m.startswith("_")]
+
+
+# Import name → PyPI package name (from github.com/ianhi/script-bisect)
+_IMPORT_TO_PACKAGE: dict[str, str] = {
+    # Image and computer vision
+    "cv2": "opencv-python",
+    "PIL": "Pillow",
+    "skimage": "scikit-image",
+    # Machine learning and data science
+    "sklearn": "scikit-learn",
+    # Data formats and parsing
+    "yaml": "PyYAML",
+    "bs4": "beautifulsoup4",
+    # Authentication and security
+    "jwt": "PyJWT",
+    # Date and time
+    "dateutil": "python-dateutil",
+    # Environment and configuration
+    "dotenv": "python-dotenv",
+    # File type detection
+    "magic": "python-magic",
+    # Hardware
+    "serial": "pyserial",
+    "usb": "pyusb",
+    # Database
+    "psycopg2": "psycopg2-binary",
+    # Attrs
+    "attr": "attrs",
+    # System
+    "gi": "pygobject",
+}
+
+
+def _imports_to_packages(modules: list[str]) -> list[str]:
+    """Map import names to likely PyPI package names."""
+    return [_IMPORT_TO_PACKAGE.get(m, m) for m in modules]
+
+
 def _cmd_notebook(notebook: str, args: list[str]) -> None:
     """Launch a single notebook via juv with jlabx extensions."""
     _check_uv()
 
     no_extras = "--no-extras" in args
-    passthrough = [a for a in args if a != "--no-extras"]
+    init_deps = "--init-deps" in args
+    passthrough = [a for a in args if a not in ("--no-extras", "--init-deps")]
 
     user_extensions = [] if no_extras else _parse_extensions()
 
     # juv handles jupyterlab itself, so only pass the other core extensions
     extras = [pkg for pkg in CORE_EXTENSIONS if pkg != "jupyterlab"] + user_extensions
 
+    nb = _read_notebook(notebook)
+    if not nb:
+        print(f"Error: could not read {notebook}")
+        sys.exit(1)
+
+    # If no PEP 723 metadata, detect imports from notebook cells
+    detected_packages: list[str] = []
+    if not _has_juv_metadata(nb):
+        imports = _filter_third_party(_extract_imports(nb))
+        detected_packages = _imports_to_packages(imports)
+
+        if init_deps:
+            # Write PEP 723 metadata into the notebook via juv
+            print(f"Initializing PEP 723 metadata in {notebook}...")
+            subprocess.run(["uvx", "juv", "init", notebook], check=True)
+            if detected_packages:
+                print(f"  Adding detected deps: {', '.join(detected_packages)}")
+                subprocess.run(
+                    ["uvx", "juv", "add", notebook] + detected_packages, check=True
+                )
+            print()
+            # Clear detected_packages since juv now manages them
+            detected_packages = []
+        else:
+            if detected_packages:
+                print(
+                    f"No PEP 723 metadata — detected imports: {', '.join(detected_packages)}"
+                )
+            else:
+                print(f"No PEP 723 metadata or third-party imports in {notebook}")
+            print("  Tip: use --init-deps to persist deps in the notebook via juv")
+            print()
+
     _print_extensions(no_extras, user_extensions)
     print(f"Notebook mode — launching {notebook} via juv")
     print()
 
-    # Build --with args for juv
+    # Build --with args: jlabx extensions + any auto-detected packages
     with_args: list[str] = []
-    for pkg in extras:
+    for pkg in extras + detected_packages:
         with_args.extend(["--with", pkg])
 
     # Port handling
@@ -312,6 +432,7 @@ def _cmd_help() -> None:
     print("Usage:")
     print("  jlabx                        Launch JupyterLab")
     print("  jlabx notebook.ipynb         Launch a notebook via juv")
+    print("  jlabx notebook.ipynb --init-deps  Detect imports & persist as juv deps")
     print("  jlabx --uv                   Force uv even in a pixi project")
     print("  jlabx --no-extras [args]     Launch without user extensions")
     print("  jlabx list                   Show configured extensions")
