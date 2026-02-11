@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Launch JupyterLab with extensions — no install, no config, just go"
 requires-python = ">=3.10"
 license = "MIT"
+readme = "README.md"
 keywords = ["jupyterlab", "jupyter", "extensions", "uv"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -18,6 +19,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/ianhi/jlabx"
+Documentation = "https://ianhi.github.io/jlabx/"
 
 [project.scripts]
 jlabx = "jlabx:main"
