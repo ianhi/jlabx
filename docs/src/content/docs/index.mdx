@@ -1,0 +1,70 @@
+---
+title: jlabx
+description: Launch JupyterLab with extensions — without touching your project's dependencies.
+---
+
+import { Steps, Aside } from "@astrojs/starlight/components";
+
+Launch JupyterLab with your favorite extensions — without adding them to your project's `pyproject.toml`. jlabx manages extensions separately and injects them at launch time via `uv`.
+
+## Install
+
+```bash
+uv tool install jlabx
+```
+
+## Quick start
+
+<Steps>
+
+1. **Launch JupyterLab** with all configured extensions:
+
+   ```bash
+   jlabx
+   ```
+
+2. **Customize** which extensions are loaded:
+
+   ```bash
+   jlabx add jupyterlab-vim
+   jlabx add jupyterlab-myst
+   jlabx remove jupyterlab-git
+   ```
+
+3. **See what's configured**:
+
+   ```bash
+   jlabx list
+   ```
+
+</Steps>
+
+## What it does
+
+jlabx always includes these **core extensions**:
+
+- `jupyterlab` — JupyterLab itself
+- `jupyter-collaboration` — real-time collaboration
+- `jupyter-lsp` + `python-lsp-server` — language server support
+
+On top of that, it loads **user extensions** from your config file. The defaults are `jupyterlab-vim`, `jupyterlab-myst`, and `jupyterlab-git` — change them with `jlabx add` and `jlabx remove`.
+
+## Environment detection
+
+jlabx auto-detects how to launch based on files in your working directory:
+
+- **Pixi project** (`pixi.toml` / `pixi.lock`) — delegates to `pixi run jupyter-lab`
+- **Python project** (`pyproject.toml`) — uses `uv run --with <extensions> jupyter-lab`
+- **Standalone** (no project files) — uses `uvx --from jupyterlab --with <extensions> jupyter-lab`
+
+See [Environments](/jlabx/environments/) for details.
+
+<Aside type="tip">
+  Use `jlabx --no-extras` to skip user extensions and launch with only the core set.
+</Aside>
+
+## Why?
+
+You're working in a repo with a `pyproject.toml` for your project — maybe it's a library, a data pipeline, or a research project. You want JupyterLab with vim bindings, collaboration, LSP, and other extensions. But adding `jupyterlab` and all those extras to your project dependencies would bloat things up and create conflicts.
+
+jlabx keeps your project clean by managing JupyterLab extensions in a separate config at `~/.config/jlabx/config.toml`, then injecting them at launch time with `uv run --with`.
