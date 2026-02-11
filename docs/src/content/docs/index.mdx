@@ -5,7 +5,7 @@ description: Launch JupyterLab with extensions — without touching your project
 
 import { Steps, Aside } from "@astrojs/starlight/components";
 
-Launch JupyterLab with your favorite extensions — without adding them to your project's `pyproject.toml`. jlabx manages extensions separately and injects them at launch time via `uv`.
+Launch JupyterLab with your favorite extensions — without adding them to your project's `pyproject.toml` or `pixi.toml`. Works with both **uv** and **pixi** projects out of the box. jlabx manages extensions separately and injects them at launch time.
 
 ## Install
 
@@ -65,6 +65,6 @@ See [Environments](/jlabx/environments/) for details.
 
 ## Why?
 
-You're working in a repo with a `pyproject.toml` for your project — maybe it's a library, a data pipeline, or a research project. You want JupyterLab with vim bindings, collaboration, LSP, and other extensions. But adding `jupyterlab` and all those extras to your project dependencies would bloat things up and create conflicts.
+You're working in a repo with a `pyproject.toml` or `pixi.toml` — maybe it's a library, a data pipeline, or a research project. You want JupyterLab with vim bindings, collaboration, LSP, and other extensions. But adding `jupyterlab` and all those extras to your project dependencies would bloat things up and create conflicts.
 
-jlabx keeps your project clean by managing JupyterLab extensions in a separate config at `~/.config/jlabx/config.toml`, then injecting them at launch time with `uv run --with`.
+jlabx keeps your project clean by managing JupyterLab extensions in a separate config at `~/.config/jlabx/config.toml`, then injecting them at launch time. It auto-detects whether you're in a **pixi** or **uv** project and does the right thing.

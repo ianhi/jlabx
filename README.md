@@ -1,6 +1,6 @@
 # jlabx
 
-Launch JupyterLab with extensions — without touching your project's dependencies.
+Launch JupyterLab with extensions — without touching your project's dependencies. Works with both **uv** and **pixi** projects.
 
 ```bash
 uv tool install jlabx
@@ -9,7 +9,7 @@ jlabx
 
 ## Why?
 
-You're working in a repo with a `pyproject.toml`, but you want JupyterLab with vim bindings, LSP, collaboration, and other extensions. You can't (or don't want to) add them as project dependencies. jlabx manages extensions separately and injects them at launch time via `uv run --with`.
+You're working in a repo with a `pyproject.toml` or `pixi.toml`, but you want JupyterLab with vim bindings, LSP, collaboration, and other extensions. You can't (or don't want to) add them as project dependencies. jlabx manages extensions separately and injects them at launch time — auto-detecting whether you're in a uv or pixi environment.
 
 ## Quick start
 

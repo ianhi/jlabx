@@ -1,10 +1,10 @@
 # jlabx
 
-Zero-dependency Python CLI that launches JupyterLab with configurable extensions via uv.
+Zero-dependency Python CLI that launches JupyterLab with configurable extensions. Works with both uv and pixi projects.
 
 ## Problem
 
-You want JupyterLab with specific extensions (vim, collaboration, LSP, etc.) in a repo that already has a `pyproject.toml` — but you can't add jupyterlab to the project's dependencies. jlabx solves this by managing extensions separately and using `uv run --with` to inject them at launch time.
+You want JupyterLab with specific extensions (vim, collaboration, LSP, etc.) in a repo that already has a `pyproject.toml` or `pixi.toml` — but you can't add jupyterlab to the project's dependencies. jlabx solves this by managing extensions separately, auto-detecting your environment (pixi or uv), and injecting them at launch time.
 
 ## Project structure
 

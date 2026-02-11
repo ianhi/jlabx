@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Install jlabx and launch JupyterLab with extensions.
+description: Install jlabx and launch JupyterLab with extensions in any uv or pixi project.
 ---
 
 ## Install
@@ -21,7 +21,7 @@ Run `jlabx` in any directory:
 jlabx
 ```
 
-On first run, jlabx creates a config file at `~/.config/jlabx/config.toml` with default extensions. It then launches JupyterLab with all core and user extensions.
+On first run, jlabx creates a config file at `~/.config/jlabx/config.toml` with default extensions. It auto-detects whether you're in a **pixi** or **uv** project and launches JupyterLab with all core and user extensions.
 
 ## What gets installed
 
