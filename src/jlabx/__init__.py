@@ -191,7 +191,8 @@ def _cmd_launch(args: list[str]) -> None:
     _check_uv()
 
     no_extras = "--no-extras" in args
-    passthrough = [a for a in args if a != "--no-extras"]
+    force_uv = "--uv" in args
+    passthrough = [a for a in args if a not in ("--no-extras", "--uv")]
 
     # Build extension list
     user_extensions = [] if no_extras else _parse_extensions()
@@ -223,7 +224,10 @@ def _cmd_launch(args: list[str]) -> None:
 
     # Detect environment and build command
     cwd = Path.cwd()
-    if (cwd / "pixi.toml").exists() or (cwd / "pixi.lock").exists():
+    is_pixi = not force_uv and (
+        (cwd / "pixi.toml").exists() or (cwd / "pixi.lock").exists()
+    )
+    if is_pixi:
         print("Pixi project detected")
         print(f"  Note: Add to pixi.toml: {' '.join(all_extensions)}")
         cmd = ["pixi", "run", "jupyter-lab"] + port_args + passthrough
@@ -258,6 +262,7 @@ def _cmd_help() -> None:
     print()
     print("Usage:")
     print("  jlabx                        Launch JupyterLab")
+    print("  jlabx --uv                   Force uv even in a pixi project")
     print("  jlabx --no-extras [args]     Launch without user extensions")
     print("  jlabx list                   Show configured extensions")
     print("  jlabx add <pkg> [pkg...]     Add user extensions")

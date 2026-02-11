@@ -12,6 +12,9 @@ jlabx
 # Launch without user extensions (core only)
 jlabx --no-extras
 
+# Force uv even in a pixi project
+jlabx --uv
+
 # Pass arguments through to jupyter-lab
 jlabx --port 9999 --no-browser
 ```

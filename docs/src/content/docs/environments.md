@@ -45,3 +45,5 @@ jlabx checks in this order:
 3. Standalone (fallback)
 
 The first match wins. If you have both `pixi.toml` and `pyproject.toml`, Pixi takes priority.
+
+Use `jlabx --uv` to skip Pixi detection and force the uv code path instead.
