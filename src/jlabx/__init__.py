@@ -250,7 +250,9 @@ def _cmd_notebook(notebook: str, args: list[str]) -> None:
     port_args = [] if has_port else ["--port", port]
 
     # juv passthrough args go after --
-    juv_passthrough = ["--"] + port_args + passthrough if (port_args or passthrough) else []
+    juv_passthrough = (
+        ["--"] + port_args + passthrough if (port_args or passthrough) else []
+    )
 
     cmd = ["uvx", "juv", "run"] + with_args + [notebook] + juv_passthrough
     _run_with_signals(cmd)
@@ -293,7 +295,13 @@ def _cmd_launch(args: list[str]) -> None:
         cmd = ["uv", "run"] + with_args + ["jupyter-lab"] + port_args + passthrough
     else:
         print("Standalone mode — launching JupyterLab with extras...")
-        cmd = ["uvx", "--from", "jupyterlab"] + with_args + ["jupyter-lab"] + port_args + passthrough
+        cmd = (
+            ["uvx", "--from", "jupyterlab"]
+            + with_args
+            + ["jupyter-lab"]
+            + port_args
+            + passthrough
+        )
 
     _run_with_signals(cmd)
 
