@@ -16,23 +16,31 @@ You're working in a repo with a `pyproject.toml` or `pixi.toml`, but you want Ju
 ```bash
 # Install
 uv tool install jlabx
+```
 
-# Launch JupyterLab with default extensions
+In a project with a `pyproject.toml` or `pixi.toml`:
+
+```bash
 jlabx
+```
 
-# Launch a single notebook (uses juv, auto-detects imports)
-jlabx notebook.ipynb
+Launch a single notebook — imports are auto-detected and mapped to PyPI packages:
 
-# Persist detected imports as PEP 723 metadata in the notebook
+```bash
+jlabx analysis.ipynb
+```
+
+```bash
+# Persist auto-detected deps as PEP 723 metadata in the notebook
 jlabx notebook.ipynb --init-deps
+
+# Force uv even in a pixi project
+jlabx --uv
 
 # Manage extensions
 jlabx list                  # Show configured extensions
 jlabx add jupyterlab-vim    # Add an extension
 jlabx remove jupyterlab-vim # Remove an extension
-
-# Launch without user extensions
-jlabx --no-extras
 ```
 
 ## Core extensions (always included)

@@ -15,12 +15,25 @@ uv tool install jlabx
 
 ## Usage
 
-```bash
-# Launch JupyterLab in the current project
-jlabx
+In a project with a `pyproject.toml` or `pixi.toml`, just run:
 
-# Launch a single notebook (auto-detects deps from imports)
-jlabx notebook.ipynb
+```bash
+jlabx
+```
+
+jlabx auto-detects your environment and launches JupyterLab with collaboration, LSP, and your configured extensions — without adding them to your project's dependencies.
+
+Open a single notebook with auto-detected dependencies:
+
+```bash
+jlabx analysis.ipynb
+```
+
+If the notebook has no [PEP 723](https://peps.python.org/pep-0723/) metadata, jlabx scans `import` statements, maps them to PyPI packages (`sklearn` → `scikit-learn`, `PIL` → `Pillow`, etc.), and passes them as `--with` args — so the notebook just works.
+
+```bash
+# Persist auto-detected deps into the notebook as PEP 723 metadata
+jlabx analysis.ipynb --init-deps
 
 # Force uv even in a pixi project
 jlabx --uv
@@ -28,14 +41,13 @@ jlabx --uv
 # Skip user extensions, core only
 jlabx --no-extras
 
-# Persist auto-detected deps into the notebook as PEP 723 metadata
-jlabx notebook.ipynb --init-deps
-
 # Manage your global UI extensions
 jlabx add jupyterlab-vim
 jlabx remove jupyterlab-git
 jlabx list
 ```
+
+See [Usage](/jlabx/usage/) for full details.
 
 ## How it works
 
@@ -53,7 +65,7 @@ See [Environments](/jlabx/environments/) for details.
 When you pass a `.ipynb` file, jlabx delegates to [juv](https://github.com/manzt/juv) for per-notebook dependency management:
 
 - **Has PEP 723 metadata** — juv resolves the notebook's own deps, jlabx adds UI extensions on top
-- **No metadata** — jlabx scans `import` statements, maps them to PyPI packages (`sklearn` → `scikit-learn`, `PIL` → `Pillow`, etc.), and passes them as `--with` args
+- **No metadata** — jlabx scans `import` statements, maps them to PyPI packages, and passes them as `--with` args
 - **`--init-deps`** — writes detected deps into the notebook as a PEP 723 metadata cell via `juv init` + `juv add`
 
 juv is fetched automatically via `uvx` — no separate install needed.
