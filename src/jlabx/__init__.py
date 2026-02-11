@@ -173,15 +173,12 @@ def _cmd_remove(packages: list[str]) -> None:
     _write_config(new_list)
 
 
-def _find_uv() -> tuple[str, str]:
-    """Find uv/uvx executables. Returns (uv_cmd, uvx_cmd)."""
+def _check_uv() -> None:
+    """Ensure uv is available."""
     if shutil.which("uv"):
-        return ("uv", "uvx")
-    if shutil.which("npx"):
-        print("uv not found — falling back to npx @manzt/uv")
-        return ("npx @manzt/uv", "npx @manzt/uvx")
+        return
 
-    print("Error: neither 'uv' nor 'npx' found in PATH.")
+    print("Error: 'uv' not found in PATH.")
     print()
     print("Install uv:")
     print("  curl -LsSf https://astral.sh/uv/install.sh | sh")
@@ -191,7 +188,7 @@ def _find_uv() -> tuple[str, str]:
 
 
 def _cmd_launch(args: list[str]) -> None:
-    uv_cmd, uvx_cmd = _find_uv()
+    _check_uv()
 
     no_extras = "--no-extras" in args
     passthrough = [a for a in args if a != "--no-extras"]
@@ -232,10 +229,10 @@ def _cmd_launch(args: list[str]) -> None:
         cmd = ["pixi", "run", "jupyter-lab"] + port_args + passthrough
     elif (cwd / "pyproject.toml").exists():
         print("Python project detected — installing local package + extras...")
-        cmd = uv_cmd.split() + ["run"] + with_args + ["jupyter-lab"] + port_args + passthrough
+        cmd = ["uv", "run"] + with_args + ["jupyter-lab"] + port_args + passthrough
     else:
         print("Standalone mode — launching JupyterLab with extras...")
-        cmd = uvx_cmd.split() + ["--from", "jupyterlab"] + with_args + ["jupyter-lab"] + port_args + passthrough
+        cmd = ["uvx", "--from", "jupyterlab"] + with_args + ["jupyter-lab"] + port_args + passthrough
 
     # Launch with signal forwarding
     proc = subprocess.Popen(cmd)

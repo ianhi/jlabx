@@ -21,7 +21,7 @@ docs/                    # Starlight (Astro) docs site
 - **Single file**: Everything lives in `src/jlabx/__init__.py`. Keep it that way unless complexity genuinely demands splitting.
 - **Three launch modes**: Pixi project (delegates to `pixi run`), Python project (`uv run --with`), standalone (`uvx --from`). Detection is based on file presence in cwd.
 - **Config location**: `$XDG_CONFIG_HOME/jlabx/config.toml` (defaults to `~/.config/jlabx/config.toml`).
-- **uv-first, npx fallback**: Prefers `uv`/`uvx` but falls back to `npx @manzt/uv` if uv isn't installed.
+- **Requires uv**: Uses `uv run` / `uvx` to launch JupyterLab. Since jlabx is installed via `uv tool install`, uv is always available.
 
 ## Development
 
