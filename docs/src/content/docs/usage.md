@@ -32,9 +32,14 @@ When you pass a `.ipynb` file, jlabx delegates to [juv](https://github.com/manzt
 # Launch a notebook with its own deps + your jlabx extensions
 jlabx analysis.ipynb
 
+# Start a new notebook from scratch
+jlabx new-experiment.ipynb
+
 # Same, but skip user extensions
 jlabx analysis.ipynb --no-extras
 ```
+
+If the `.ipynb` file doesn't exist, jlabx creates an empty notebook and launches it.
 
 juv is fetched automatically via `uvx` — no separate install needed.
 

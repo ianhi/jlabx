@@ -225,6 +225,30 @@ def _run_with_signals(cmd: list[str]) -> None:
     sys.exit(proc.wait())
 
 
+_EMPTY_NOTEBOOK: dict = {
+    "cells": [],
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3 (ipykernel)",
+            "language": "python",
+            "name": "python3",
+        },
+        "language_info": {"name": "python", "version": "3.12.0"},
+    },
+    "nbformat": 4,
+    "nbformat_minor": 5,
+}
+
+
+def _create_notebook(path: str) -> dict:
+    """Create an empty notebook file and return its contents."""
+    nb = _EMPTY_NOTEBOOK.copy()
+    with open(path, "w") as f:
+        json.dump(nb, f, indent=1)
+        f.write("\n")
+    return nb
+
+
 def _read_notebook(notebook: str) -> dict:
     """Read a notebook as JSON. Returns empty dict on error."""
     try:
@@ -322,10 +346,14 @@ def _cmd_notebook(notebook: str, args: list[str]) -> None:
     # juv handles jupyterlab itself, so only pass the other core extensions
     extras = [pkg for pkg in CORE_EXTENSIONS if pkg != "jupyterlab"] + user_extensions
 
-    nb = _read_notebook(notebook)
-    if not nb:
-        print(f"Error: could not read {notebook}")
-        sys.exit(1)
+    if not Path(notebook).exists():
+        print(f"Creating new notebook: {notebook}")
+        nb = _create_notebook(notebook)
+    else:
+        nb = _read_notebook(notebook)
+        if not nb:
+            print(f"Error: could not read {notebook}")
+            sys.exit(1)
 
     # If no PEP 723 metadata, detect imports from notebook cells
     detected_packages: list[str] = []
@@ -431,7 +459,7 @@ def _cmd_help() -> None:
     print()
     print("Usage:")
     print("  jlabx                        Launch JupyterLab")
-    print("  jlabx notebook.ipynb         Launch a notebook via juv")
+    print("  jlabx notebook.ipynb         Launch a notebook via juv (creates if new)")
     print("  jlabx notebook.ipynb --init-deps  Detect imports & persist as juv deps")
     print("  jlabx --uv                   Force uv even in a pixi project")
     print("  jlabx --no-extras [args]     Launch without user extensions")
