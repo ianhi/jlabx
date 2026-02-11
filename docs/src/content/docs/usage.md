@@ -9,6 +9,9 @@ description: Subcommands, flags, and examples.
 # Launch JupyterLab with all extensions
 jlabx
 
+# Launch a single notebook (uses juv)
+jlabx notebook.ipynb
+
 # Launch without user extensions (core only)
 jlabx --no-extras
 
@@ -20,6 +23,20 @@ jlabx --port 9999 --no-browser
 ```
 
 Any arguments not recognized by jlabx are passed through to `jupyter-lab`.
+
+### Notebook mode
+
+When you pass a `.ipynb` file, jlabx delegates to [juv](https://github.com/manzt/juv) — a tool for reproducible notebooks with [PEP 723](https://peps.python.org/pep-0723/) inline script metadata. juv handles the notebook's own dependencies while jlabx injects your configured UI extensions (collaboration, LSP, vim, etc.) via `--with`.
+
+```bash
+# Launch a notebook with its own deps + your jlabx extensions
+jlabx analysis.ipynb
+
+# Same, but skip user extensions
+jlabx analysis.ipynb --no-extras
+```
+
+juv is fetched automatically via `uvx` — no separate install needed. If the notebook has a PEP 723 metadata cell (created with `juv init` / `juv add`), those dependencies are resolved alongside your jlabx extensions.
 
 ### Port
 

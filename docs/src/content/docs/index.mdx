@@ -59,6 +59,16 @@ jlabx auto-detects how to launch based on files in your working directory:
 
 See [Environments](/jlabx/environments/) for details.
 
+## Notebook mode
+
+Pass a `.ipynb` file to launch a single notebook via [juv](https://github.com/manzt/juv), with your jlabx extensions injected automatically:
+
+```bash
+jlabx notebook.ipynb
+```
+
+juv handles the notebook's own dependencies (via [PEP 723](https://peps.python.org/pep-0723/) inline metadata), while jlabx adds your configured UI extensions on top. No separate juv install needed — it's fetched via `uvx`.
+
 <Aside type="tip">
   Use `jlabx --no-extras` to skip user extensions and launch with only the core set.
 </Aside>

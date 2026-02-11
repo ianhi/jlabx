@@ -187,18 +187,8 @@ def _check_uv() -> None:
     sys.exit(1)
 
 
-def _cmd_launch(args: list[str]) -> None:
-    _check_uv()
-
-    no_extras = "--no-extras" in args
-    force_uv = "--uv" in args
-    passthrough = [a for a in args if a not in ("--no-extras", "--uv")]
-
-    # Build extension list
-    user_extensions = [] if no_extras else _parse_extensions()
-    all_extensions = CORE_EXTENSIONS + user_extensions
-
-    # Print what we're loading
+def _print_extensions(no_extras: bool, user_extensions: list[str]) -> None:
+    """Print what extensions are being loaded."""
     print("Core extensions:")
     for pkg in CORE_EXTENSIONS:
         print(f"  - {pkg}")
@@ -211,6 +201,73 @@ def _cmd_launch(args: list[str]) -> None:
     else:
         print("User extensions: none configured")
     print()
+
+
+def _run_with_signals(cmd: list[str]) -> None:
+    """Launch a subprocess with signal forwarding and wait for exit."""
+    proc = subprocess.Popen(cmd)
+
+    def handler(sig: int, frame: object) -> None:
+        print("\nShutting down JupyterLab...")
+        proc.terminate()
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            print("Force killing hung process...")
+            proc.kill()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
+
+    sys.exit(proc.wait())
+
+
+def _cmd_notebook(notebook: str, args: list[str]) -> None:
+    """Launch a single notebook via juv with jlabx extensions."""
+    _check_uv()
+
+    no_extras = "--no-extras" in args
+    passthrough = [a for a in args if a != "--no-extras"]
+
+    user_extensions = [] if no_extras else _parse_extensions()
+
+    # juv handles jupyterlab itself, so only pass the other core extensions
+    extras = [pkg for pkg in CORE_EXTENSIONS if pkg != "jupyterlab"] + user_extensions
+
+    _print_extensions(no_extras, user_extensions)
+    print(f"Notebook mode — launching {notebook} via juv")
+    print()
+
+    # Build --with args for juv
+    with_args: list[str] = []
+    for pkg in extras:
+        with_args.extend(["--with", pkg])
+
+    # Port handling
+    port = os.environ.get("JUPYTER_PORT", "8888")
+    has_port = any("--port" in a for a in passthrough)
+    port_args = [] if has_port else ["--port", port]
+
+    # juv passthrough args go after --
+    juv_passthrough = ["--"] + port_args + passthrough if (port_args or passthrough) else []
+
+    cmd = ["uvx", "juv", "run"] + with_args + [notebook] + juv_passthrough
+    _run_with_signals(cmd)
+
+
+def _cmd_launch(args: list[str]) -> None:
+    _check_uv()
+
+    no_extras = "--no-extras" in args
+    force_uv = "--uv" in args
+    passthrough = [a for a in args if a not in ("--no-extras", "--uv")]
+
+    # Build extension list
+    user_extensions = [] if no_extras else _parse_extensions()
+    all_extensions = CORE_EXTENSIONS + user_extensions
+
+    _print_extensions(no_extras, user_extensions)
 
     # Port handling
     port = os.environ.get("JUPYTER_PORT", "8888")
@@ -238,23 +295,7 @@ def _cmd_launch(args: list[str]) -> None:
         print("Standalone mode — launching JupyterLab with extras...")
         cmd = ["uvx", "--from", "jupyterlab"] + with_args + ["jupyter-lab"] + port_args + passthrough
 
-    # Launch with signal forwarding
-    proc = subprocess.Popen(cmd)
-
-    def handler(sig: int, frame: object) -> None:
-        print("\nShutting down JupyterLab...")
-        proc.terminate()
-        try:
-            proc.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            print("Force killing hung process...")
-            proc.kill()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, handler)
-    signal.signal(signal.SIGTERM, handler)
-
-    sys.exit(proc.wait())
+    _run_with_signals(cmd)
 
 
 def _cmd_help() -> None:
@@ -262,6 +303,7 @@ def _cmd_help() -> None:
     print()
     print("Usage:")
     print("  jlabx                        Launch JupyterLab")
+    print("  jlabx notebook.ipynb         Launch a notebook via juv")
     print("  jlabx --uv                   Force uv even in a pixi project")
     print("  jlabx --no-extras [args]     Launch without user extensions")
     print("  jlabx list                   Show configured extensions")
@@ -285,6 +327,13 @@ def main() -> None:
 
     if not args:
         _cmd_launch([])
+        return
+
+    # Check if any arg is a .ipynb file → notebook mode
+    notebooks = [a for a in args if a.endswith(".ipynb")]
+    if notebooks:
+        rest = [a for a in args if not a.endswith(".ipynb")]
+        _cmd_notebook(notebooks[0], rest)
         return
 
     cmd = args[0]

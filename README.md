@@ -20,6 +20,9 @@ uv tool install jlabx
 # Launch JupyterLab with default extensions
 jlabx
 
+# Launch a single notebook (uses juv for per-notebook deps)
+jlabx notebook.ipynb
+
 # Manage extensions
 jlabx list                  # Show configured extensions
 jlabx add jupyterlab-vim    # Add an extension
