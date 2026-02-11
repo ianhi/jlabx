@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import difflib
 import json
 import os
 import signal
@@ -249,6 +250,68 @@ def _create_notebook(path: str) -> dict:
     return nb
 
 
+def _find_similar_notebooks(notebook: str) -> list[str]:
+    """Find .ipynb files in the same directory with similar names."""
+    path = Path(notebook)
+    parent = path.parent or Path(".")
+    name = path.name
+    candidates = [p.name for p in parent.glob("*.ipynb")]
+    if not candidates:
+        return []
+    return difflib.get_close_matches(name, candidates, n=3, cutoff=0.6)
+
+
+def _resolve_notebook(notebook: str) -> str:
+    """Resolve a notebook path, prompting for similar names or creating new.
+
+    Returns the notebook path to use (may differ from input if user picks
+    a suggestion).
+    """
+    if Path(notebook).exists():
+        return notebook
+
+    similar = _find_similar_notebooks(notebook)
+    if not similar:
+        print(f"Creating new notebook: {notebook}")
+        _create_notebook(notebook)
+        return notebook
+
+    print(f"{notebook} does not exist.")
+    print()
+    for i, name in enumerate(similar, 1):
+        print(f"  {i}) {name}")
+    print(f"  c) Create {Path(notebook).name}")
+    print()
+
+    try:
+        choice = input("Choice [1]: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(1)
+
+    if choice == "c":
+        print(f"Creating new notebook: {notebook}")
+        _create_notebook(notebook)
+        return notebook
+
+    # Default to first option
+    if not choice:
+        choice = "1"
+
+    try:
+        idx = int(choice) - 1
+        if 0 <= idx < len(similar):
+            picked = str(Path(notebook).parent / similar[idx])
+            print(f"Launching {picked}")
+            return picked
+    except ValueError:
+        pass
+
+    print(f"Invalid choice. Creating {notebook}")
+    _create_notebook(notebook)
+    return notebook
+
+
 def _read_notebook(notebook: str) -> dict:
     """Read a notebook as JSON. Returns empty dict on error."""
     try:
@@ -346,14 +409,12 @@ def _cmd_notebook(notebook: str, args: list[str]) -> None:
     # juv handles jupyterlab itself, so only pass the other core extensions
     extras = [pkg for pkg in CORE_EXTENSIONS if pkg != "jupyterlab"] + user_extensions
 
-    if not Path(notebook).exists():
-        print(f"Creating new notebook: {notebook}")
-        nb = _create_notebook(notebook)
-    else:
-        nb = _read_notebook(notebook)
-        if not nb:
-            print(f"Error: could not read {notebook}")
-            sys.exit(1)
+    notebook = _resolve_notebook(notebook)
+
+    nb = _read_notebook(notebook)
+    if not nb:
+        print(f"Error: could not read {notebook}")
+        sys.exit(1)
 
     # If no PEP 723 metadata, detect imports from notebook cells
     detected_packages: list[str] = []
@@ -487,10 +548,24 @@ def main() -> None:
         return
 
     # Check if any arg is a .ipynb file → notebook mode
-    notebooks = [a for a in args if a.endswith(".ipynb")]
+    # Also catch common extension typos (.ipnyb, .ipnb, .inpyb, etc.)
+    _NB_EXTENSIONS = {".ipynb", ".ipnyb", ".ipnb", ".inpyb", ".ipybn"}
+
+    def _is_notebook_arg(arg: str) -> bool:
+        return any(arg.endswith(ext) for ext in _NB_EXTENSIONS)
+
+    notebooks = [a for a in args if _is_notebook_arg(a)]
     if notebooks:
-        rest = [a for a in args if not a.endswith(".ipynb")]
-        _cmd_notebook(notebooks[0], rest)
+        nb_arg = notebooks[0]
+        # Fix the extension if mistyped
+        for ext in _NB_EXTENSIONS - {".ipynb"}:
+            if nb_arg.endswith(ext):
+                corrected = nb_arg[: -len(ext)] + ".ipynb"
+                print(f"Correcting extension: {nb_arg} → {corrected}")
+                nb_arg = corrected
+                break
+        rest = [a for a in args if not _is_notebook_arg(a)]
+        _cmd_notebook(nb_arg, rest)
         return
 
     cmd = args[0]
