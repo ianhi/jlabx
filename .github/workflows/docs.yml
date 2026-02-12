@@ -1,9 +1,8 @@
 name: Deploy docs to GitHub Pages
 
 on:
-  push:
-    branches: [main]
-    paths: [docs/**]
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
