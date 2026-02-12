@@ -131,3 +131,11 @@ jlabx remove package-one package-two
 jlabx --help      # Show help
 jlabx --version   # Show version
 ```
+
+## Known issues
+
+### Ctrl+C shutdown hangs with jupyter-collaboration
+
+The `jupyter-collaboration` extension (included by default) can prevent JupyterLab from exiting cleanly on Ctrl+C due to lingering async tasks. See [jupyter-collaboration#161](https://github.com/jupyterlab/jupyter-collaboration/issues/161) for details.
+
+jlabx works around this by sending SIGTERM, waiting 3 seconds, then force-killing the process if it hasn't exited. You may see a brief delay before the "Force killing hung process..." message appears — this is expected.
