@@ -9,9 +9,13 @@ jlabx detects your project type by looking at files in the current working direc
 
 **Detected by:** `pixi.toml` or `pixi.lock` in cwd
 
-**Command:** `pixi run jupyter-lab`
+jlabx creates a temporary virtual environment with `--system-site-packages` on top of the Pixi environment. Extensions are installed into this temp venv via `uv pip install`, and the temp directory is cleaned up when JupyterLab exits.
 
-When a Pixi project is detected, jlabx delegates to Pixi and prints a reminder to add extensions to your `pixi.toml` directly. In this mode, user extensions from the config file are not injected — Pixi manages the environment.
+This means:
+
+- Your Pixi environment's packages (numpy, xarray, etc.) are visible in JupyterLab
+- Extensions never touch `pixi.toml` or the Pixi env's site-packages
+- Everything is fully ephemeral — nothing persists after shutdown
 
 ## Python project
 
@@ -47,3 +51,13 @@ jlabx checks in this order:
 The first match wins. If you have both `pixi.toml` and `pyproject.toml`, Pixi takes priority.
 
 Use `jlabx --uv` to skip Pixi detection and force the uv code path instead.
+
+## Python version
+
+In uv and standalone modes, you can specify a Python version:
+
+```bash
+jlabx --python 3.11
+```
+
+This passes `--python 3.11` to `uv run` or `uvx`. Useful when the default Python is too new for a dependency that lacks a wheel for the latest version.

@@ -18,6 +18,9 @@ jlabx --no-extras
 # Force uv even in a pixi project
 jlabx --uv
 
+# Use a specific Python version (uv/standalone modes)
+jlabx --python 3.11
+
 # Pass arguments through to jupyter-lab
 jlabx --port 9999 --no-browser
 ```

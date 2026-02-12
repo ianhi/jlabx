@@ -10,6 +10,7 @@ import signal
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from jlabx._version import __version__  # noqa: E402
@@ -472,7 +473,25 @@ def _cmd_launch(args: list[str]) -> None:
 
     no_extras = "--no-extras" in args
     force_uv = "--uv" in args
-    passthrough = [a for a in args if a not in ("--no-extras", "--uv")]
+
+    # Parse --python flag
+    python_version: str | None = None
+    passthrough: list[str] = []
+    skip_next = False
+    for i, a in enumerate(args):
+        if skip_next:
+            skip_next = False
+            continue
+        if a in ("--no-extras", "--uv"):
+            continue
+        if a == "--python" and i + 1 < len(args):
+            python_version = args[i + 1]
+            skip_next = True
+            continue
+        if a.startswith("--python="):
+            python_version = a.split("=", 1)[1]
+            continue
+        passthrough.append(a)
 
     # Build extension list
     user_extensions = [] if no_extras else _parse_extensions()
@@ -485,10 +504,12 @@ def _cmd_launch(args: list[str]) -> None:
     has_port = any("--port" in a for a in passthrough)
     port_args = [] if has_port else ["--port", port]
 
-    # Build --with args
+    # Build --with args (for uv modes)
     with_args: list[str] = []
     for pkg in all_extensions:
         with_args.extend(["--with", pkg])
+
+    python_args = ["--python", python_version] if python_version else []
 
     # Detect environment and build command
     cwd = Path.cwd()
@@ -496,16 +517,47 @@ def _cmd_launch(args: list[str]) -> None:
         (cwd / "pixi.toml").exists() or (cwd / "pixi.lock").exists()
     )
     if is_pixi:
-        print("Pixi project detected")
-        print(f"  Note: Add to pixi.toml: {' '.join(all_extensions)}")
-        cmd = ["pixi", "run", "jupyter-lab"] + port_args + passthrough
+        print("Pixi project detected — ephemeral venv for extensions")
+        pixi_python = subprocess.run(
+            ["pixi", "run", "which", "python"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+
+        tmpdir = tempfile.mkdtemp(prefix="jlabx-")
+        venv_path = os.path.join(tmpdir, ".venv")
+        try:
+            subprocess.run(
+                [pixi_python, "-m", "venv", "--system-site-packages", venv_path],
+                check=True,
+            )
+            venv_python = os.path.join(venv_path, "bin", "python")
+            subprocess.run(
+                ["uv", "pip", "install", "--quiet", "--python", venv_python]
+                + all_extensions,
+                check=True,
+            )
+            jupyter_lab = os.path.join(venv_path, "bin", "jupyter-lab")
+            cmd = [jupyter_lab] + port_args + passthrough
+            _run_with_signals(cmd)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        return
     elif (cwd / "pyproject.toml").exists():
         print("Python project detected — installing local package + extras...")
-        cmd = ["uv", "run"] + with_args + ["jupyter-lab"] + port_args + passthrough
+        cmd = (
+            ["uv", "run"]
+            + python_args
+            + with_args
+            + ["jupyter-lab"]
+            + port_args
+            + passthrough
+        )
     else:
         print("Standalone mode — launching JupyterLab with extras...")
         cmd = (
-            ["uvx", "--from", "jupyterlab"]
+            ["uvx"]
+            + python_args
+            + ["--from", "jupyterlab"]
             + with_args
             + ["jupyter-lab"]
             + port_args
@@ -522,7 +574,8 @@ def _cmd_help() -> None:
     print("  jlabx                        Launch JupyterLab")
     print("  jlabx notebook.ipynb         Launch a notebook via juv (creates if new)")
     print("  jlabx notebook.ipynb --init-deps  Detect imports & persist as juv deps")
-    print("  jlabx --uv                   Force uv even in a pixi project")
+    print("  jlabx --uv                   Force uv mode in a pixi project")
+    print("  jlabx --python 3.11          Use a specific Python version (uv mode)")
     print("  jlabx --no-extras [args]     Launch without user extensions")
     print("  jlabx list                   Show configured extensions")
     print("  jlabx add <pkg> [pkg...]     Add user extensions")

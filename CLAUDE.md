@@ -20,7 +20,8 @@ docs/                    # Starlight (Astro) docs site
 
 - **Zero dependencies**: Only uses Python stdlib. TOML config is parsed manually to avoid requiring `tomllib` (3.11+) or `tomli`.
 - **Single file**: Everything lives in `src/jlabx/__init__.py`. Keep it that way unless complexity genuinely demands splitting.
-- **Four launch modes**: Pixi project (`pixi run`), Python project (`uv run --with`), standalone (`uvx --from`), notebook (`uvx juv run --with`). Detection is based on file presence in cwd or `.ipynb` arg.
+- **Four launch modes**: Pixi project (ephemeral venv on top of pixi env), Python project (`uv run --with`), standalone (`uvx --from`), notebook (`uvx juv run --with`). Detection is based on file presence in cwd or `.ipynb` arg.
+- **Ephemeral only**: All modes MUST inject extensions ephemerally. Never modify `pixi.toml`, `pyproject.toml`, or install packages into the user's project environment. Pixi mode uses a temporary venv with `--system-site-packages` layered on the pixi env; the temp dir is cleaned up on exit.
 - **Notebook mode**: Delegates to [juv](https://github.com/manzt/juv) for per-notebook dependency management. Auto-detects imports if no PEP 723 metadata. `--init-deps` persists detected deps via juv.
 - **Fuzzy notebook matching**: If a `.ipynb` path doesn't exist, suggests similarly-named notebooks via `difflib.get_close_matches`. Also corrects common extension typos (`.ipnyb`, `.ipnb`, etc.).
 - **Config location**: `$XDG_CONFIG_HOME/jlabx/config.toml` (defaults to `~/.config/jlabx/config.toml`).
@@ -57,6 +58,7 @@ No test suite yet. Manual testing:
 jlabx              # Should detect Python project, use uv run --with
 jlabx --no-extras  # Should skip user extensions
 jlabx --uv         # Should force uv even in a pixi project
+jlabx --python 3.11  # Should pass --python to uv (uv/standalone modes)
 jlabx list         # Should show core + user extensions
 jlabx add foo      # Should add to config
 jlabx remove foo   # Should remove from config
