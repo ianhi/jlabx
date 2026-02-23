@@ -520,7 +520,9 @@ def _cmd_launch(args: list[str]) -> None:
         print("Pixi project detected — ephemeral venv for extensions")
         pixi_python = subprocess.run(
             ["pixi", "run", "which", "python"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
 
         tmpdir = tempfile.mkdtemp(prefix="jlabx-")
