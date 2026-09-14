@@ -6,14 +6,14 @@ import ast
 import difflib
 import json
 import os
-import signal
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from jlabx._version import __version__  # noqa: E402
+from jlabx._version import __version__
 
 CORE_EXTENSIONS = [
     "jupyterlab",
@@ -520,7 +520,9 @@ def _cmd_launch(args: list[str]) -> None:
         print("Pixi project detected — ephemeral venv for extensions")
         pixi_python = subprocess.run(
             ["pixi", "run", "which", "python"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
 
         tmpdir = tempfile.mkdtemp(prefix="jlabx-")
